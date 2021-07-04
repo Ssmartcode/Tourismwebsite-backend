@@ -1,31 +1,27 @@
-const express = require("express");
 const mongoose = require("mongoose");
 const fs = require("fs");
-
-const fileUpload = require("../config/multer-config");
-const authCheck = require("../config/auth-check");
-
-const router = express.Router();
 
 // models
 const Offer = require("../models/offers");
 const User = require("../models/users");
 
-// get offers
-router.get("/", async (req, res, next) => {
+exports.getOffers = async (req, res, next) => {
+  const { count = 9 } = req.query;
+  const { sort = "asc" } = req.query;
   let offers;
   try {
-    offers = await Offer.find();
+    offers = await Offer.find()
+      .limit(+count)
+      .sort({ createdAt: sort });
   } catch (err) {
     return next(err);
   }
   return res
     .status(200)
     .json({ offers: offers.map((offer) => offer.toObject({ getters: true })) });
-});
+};
 
-// get offer by id
-router.get("/:id", async (req, res, next) => {
+exports.getOfferById = async (req, res, next) => {
   const id = req.params.id;
   let offer;
 
@@ -35,13 +31,27 @@ router.get("/:id", async (req, res, next) => {
     return next(err);
   }
   return res.json({ offer: offer.toObject({ getters: true }) });
-});
+};
 
-// check if user is authenticated before posting, updating or deleting
-router.use(authCheck);
+exports.getOffersByCategory = async (req, res, next) => {
+  const category = req.params.category;
+  const currPage = req.query.page || 1;
 
-// post offers - create an offer
-router.post("/", fileUpload.single("image"), async (req, res, next) => {
+  let offers;
+  let offersCount;
+  try {
+    offersCount = await Offer.countDocuments();
+    offers = await Offer.find({ category })
+      .limit(2)
+      .skip(2 * (currPage - 1));
+  } catch (err) {
+    return next(err);
+  }
+  console.log(offers);
+  res.status(200).json({ offers, pages: Math.ceil(offersCount / 2) });
+};
+
+exports.createOffer = async (req, res, next) => {
   const imageFile = req.file;
 
   // get form data and create new offer
@@ -81,10 +91,9 @@ router.post("/", fileUpload.single("image"), async (req, res, next) => {
   return res
     .status(201)
     .json({ message: "You have successfuly created a new offer" });
-});
+};
 
-// update offer
-router.patch("/:id", async (req, res, next) => {
+exports.updateOffer = async (req, res, next) => {
   const id = req.params.id;
   const { title, category, price, period } = req.body;
 
@@ -108,10 +117,9 @@ router.patch("/:id", async (req, res, next) => {
     return next(err);
   }
   return res.status(200).json({ message: "Successfuly updated the offer" });
-});
+};
 
-// delete offer
-router.delete("/:id", async (req, res, next) => {
+exports.deleteOffer = async (req, res, next) => {
   const id = req.params.id;
   let imagePath;
 
@@ -140,5 +148,4 @@ router.delete("/:id", async (req, res, next) => {
   // delete the image related to the offer
   fs.unlink(imagePath, (err) => console.log(err));
   return res.status(200).json({ message: "Offer has been deleted" });
-});
-module.exports = router;
+};

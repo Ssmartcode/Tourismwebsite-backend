@@ -28,9 +28,9 @@ connection.on("error", () => console.log("Could not connect to the data base"));
 app.use(cors());
 
 // users route
-app.use("/users", require("./routers/users"));
+app.use("/users", require("./routes/users"));
 // offers route
-app.use("/offers", require("./routers/offers"));
+app.use("/offers", require("./routes/offers"));
 
 app.get("/", (req, res, next) => {
   res.status(200).json({ message: "Welcome to the website" });

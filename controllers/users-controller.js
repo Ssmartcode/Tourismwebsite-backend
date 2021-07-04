@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/users");
 
 // SIGNUP CONTROLLER
-const signup = async (req, res, next) => {
+exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
   const { userName, userPassword } = req.body;
 
@@ -38,8 +38,8 @@ const signup = async (req, res, next) => {
   }
 
   // create a token for the newly created user
-  const token = jwt.sign({ userId: user.userId }, "super_secret_key_lol", {
-    expiresIn: "1h",
+  const token = jwt.sign({ userId: user.userId }, process.env.JWT_KEY, {
+    expiresIn: "12h",
   });
 
   // send the response to the client
@@ -52,7 +52,7 @@ const signup = async (req, res, next) => {
 };
 
 // LOGIN CONTROLLER
-const login = async (req, res, next) => {
+exports.login = async (req, res, next) => {
   const { userName, userPassword } = req.body;
   let user;
   try {
@@ -73,8 +73,8 @@ const login = async (req, res, next) => {
 
     // in case the password mathces
     if (passwordMatches) {
-      const token = jwt.sign({ userId: user.id }, "super_secret_key_lol", {
-        expiresIn: "1h",
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_KEY, {
+        expiresIn: "12h",
       });
       return res.status(200).json({
         userId: user.id,
@@ -96,4 +96,3 @@ const login = async (req, res, next) => {
     return next(error);
   }
 };
-module.exports = { signup, login };
