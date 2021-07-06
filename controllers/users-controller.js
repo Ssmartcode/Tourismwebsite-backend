@@ -1,4 +1,6 @@
 const { validationResult } = require("express-validator");
+const mongoose = require("mongoose");
+const { v4 } = require("uuid");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -8,7 +10,7 @@ const User = require("../models/users");
 // SIGNUP CONTROLLER
 exports.signup = async (req, res, next) => {
   const errors = validationResult(req);
-  const { userName, userPassword } = req.body;
+  const { userName, userPassword, isAdmin } = req.body;
 
   // check if user with same name already exists in data base
   let userExists;
@@ -30,6 +32,7 @@ exports.signup = async (req, res, next) => {
     userName,
     userPassword: hashedUserPassword,
     offers: [],
+    isAdmin,
   });
   try {
     await user.save();
@@ -44,7 +47,7 @@ exports.signup = async (req, res, next) => {
 
   // send the response to the client
   return res.json({
-    userId: user.id,
+    userId: user._id,
     userName: user.userName,
     token,
     message: "User has been successfuly created",
@@ -77,8 +80,9 @@ exports.login = async (req, res, next) => {
         expiresIn: "12h",
       });
       return res.status(200).json({
-        userId: user.id,
+        userId: user._id,
         userName: user.userName,
+        isAdmin: user.isAdmin,
         token,
         message: "Logged in",
       });
@@ -95,4 +99,135 @@ exports.login = async (req, res, next) => {
     const error = new Error("Could not find the user");
     return next(error);
   }
+};
+
+exports.sendMessage = async (req, res, next) => {
+  const { title, email, message, reciever } = req.body;
+
+  let recieverUser;
+  let senderUser;
+  try {
+    recieverUser = await User.findById(reciever);
+    senderUser = await User.findById(req.userData.userId);
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  const newMessage = {
+    id: v4(),
+    from: senderUser.userName,
+    to: recieverUser.userName,
+    title,
+    email,
+    message,
+    sentAt: new Date(),
+  };
+
+  recieverUser.messages.push(newMessage);
+  senderUser.messages.push(newMessage);
+
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    await recieverUser.save({ session });
+    await senderUser.save({ session });
+
+    await session.commitTransaction();
+  } catch (err) {
+    console.log(err);
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  res.status(200).json({ messsage: "Successfuly sent the message!" });
+};
+
+exports.getMessages = async (req, res, next) => {
+  const { userId } = req.params;
+  console.log(userId === req.userData.userId);
+
+  if (userId !== req.userData.userId) {
+    const error = new Error("You are not authorized!");
+    error.code = 401;
+    return next(error);
+  }
+
+  let messages;
+
+  try {
+    const user = await User.findById(userId);
+    messages = user.messages;
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  res.status(200).json({ messages });
+};
+
+exports.deleteMessage = async (req, res, next) => {
+  const { id } = req.params;
+  const { userId } = req.userData;
+
+  let user;
+  try {
+    user = await User.findById(userId);
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  const messages = user.messages.filter((message) => {
+    return message.id !== id;
+  });
+  user.messages = messages;
+
+  try {
+    await user.save();
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+  res.status(200).json({ message: "Message has been successfuly deleted" });
+};
+
+exports.getFavorites = async (req, res, next) => {
+  let user;
+  try {
+    user = await await User.findById(req.userData.userId).populate("favorites");
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  const favorites = user.favorites;
+
+  res.status(200).json({ favorites });
+};
+exports.postFavorites = async (req, res, next) => {
+  const { offerId } = req.body;
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId);
+    user.favorites.push(offerId);
+    await user.save();
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  res.status(201).json({ meessage: "Offer has been added" });
+};
+exports.deleteFavorites = async (req, res, next) => {
+  const favId = req.params.id;
 };

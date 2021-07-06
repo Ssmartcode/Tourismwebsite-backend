@@ -40,15 +40,35 @@ exports.getOffersByCategory = async (req, res, next) => {
   let offers;
   let offersCount;
   try {
-    offersCount = await Offer.countDocuments();
+    offersCount = await Offer.countDocuments({ category });
     offers = await Offer.find({ category })
       .limit(2)
       .skip(2 * (currPage - 1));
   } catch (err) {
     return next(err);
   }
-  console.log(offers);
   res.status(200).json({ offers, pages: Math.ceil(offersCount / 2) });
+};
+
+exports.getUserOfffers = async (req, res, next) => {
+  const userId = req.params.userId;
+
+  if (userId !== req.userData.userId) {
+    const error = new Error("You are not authorized!");
+    error.code = 401;
+    next(error);
+  }
+
+  let offers;
+  try {
+    offers = await Offer.find({ author: userId });
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    next(error);
+  }
+
+  res.status(200).json({ offers });
 };
 
 exports.createOffer = async (req, res, next) => {
@@ -78,7 +98,6 @@ exports.createOffer = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     await offer.save({ session: session });
-    console.log(user);
     user.offers.push(offer);
     await user.save({ session });
     await session.commitTransaction();

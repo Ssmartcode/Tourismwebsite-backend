@@ -10,7 +10,7 @@ module.exports = (req, res, next) => {
     req.userData = { userId: decodedToken.userId };
     return next();
   } catch (err) {
-    console.log(err.message);
+    err.code = 401;
     return next(err);
   }
 };
