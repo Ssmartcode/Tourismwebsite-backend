@@ -26,10 +26,12 @@ const singupValidation = [
 router.post("/signup", singupValidation, signup);
 router.post("/login", login);
 
+// get-add-delete favorite offers from user's list
 router.get("/favorites", authCheck, getFavorites);
 router.post("/favorites/add", authCheck, postFavorites);
 router.delete("/favorites/delete/:id", authCheck, deleteFavorites);
 
+// get-add-delete messages from user's list of messages (both sent and recieved)
 router.post("/messages/send-message", authCheck, sendMessage);
 router.get("/messages/get-messages/:userId", authCheck, getMessages);
 router.delete("/messages/delete-message/:id", authCheck, deleteMessage);

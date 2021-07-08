@@ -8,11 +8,24 @@ const User = require("../models/users");
 exports.getOffers = async (req, res, next) => {
   const { count = 9 } = req.query;
   const { sort = "asc" } = req.query;
+  const { discounted = "no" } = req.query;
   let offers;
+
+  if (req.query.random === "yes") {
+    const { category = "trip" } = req.query;
+    const count = await Offer.countDocuments({ category });
+    const rand = Math.floor(Math.random() * count);
+    const offer = await Offer.findOne({ category }).skip(rand);
+    return res.status(200).json({ offer });
+  }
+
+  let query = {};
+  if (discounted === "yes") query = { newPrice: { $ne: null } };
   try {
-    offers = await Offer.find()
+    offers = await Offer.find(query)
       .limit(+count)
-      .sort({ createdAt: sort });
+      .sort({ createdAt: sort })
+      .populate("period");
   } catch (err) {
     return next(err);
   }
@@ -30,7 +43,7 @@ exports.getOfferById = async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
-  return res.json({ offer: offer.toObject({ getters: true }) });
+  return res.status(200).json({ offer: offer.toObject({ getters: true }) });
 };
 
 exports.getOffersByCategory = async (req, res, next) => {
@@ -50,6 +63,7 @@ exports.getOffersByCategory = async (req, res, next) => {
   res.status(200).json({ offers, pages: Math.ceil(offersCount / 2) });
 };
 
+// get all the offer created by the user that made the request
 exports.getUserOfffers = async (req, res, next) => {
   const userId = req.params.userId;
 
@@ -75,11 +89,27 @@ exports.createOffer = async (req, res, next) => {
   const imageFile = req.file;
 
   // get form data and create new offer
-  const { category, title, period, price, author } = req.body;
+  const {
+    category,
+    title,
+    begins,
+    ends,
+    location,
+    transportation,
+    country,
+    price,
+    author,
+  } = req.body;
+
+  //create new offer
   const offer = Offer({
     category,
     title,
-    period,
+    begins,
+    ends,
+    location,
+    transportation,
+    country,
     price,
     image: imageFile.path,
     author,
@@ -130,8 +160,10 @@ exports.updateOffer = async (req, res, next) => {
     return next(err);
   }
   // update the offer
+  const updatedOffer = { title, category, price, period };
+  if (req.body.newPrice) updatedOffer.newPrice = req.body.newPrice;
   try {
-    await Offer.findByIdAndUpdate(id, { title, category, price, period });
+    await Offer.findByIdAndUpdate(id, updatedOffer);
   } catch (err) {
     return next(err);
   }

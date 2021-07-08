@@ -42,7 +42,7 @@ exports.signup = async (req, res, next) => {
 
   // create a token for the newly created user
   const token = jwt.sign({ userId: user.userId }, process.env.JWT_KEY, {
-    expiresIn: "12h",
+    expiresIn: "48h",
   });
 
   // send the response to the client
@@ -77,7 +77,7 @@ exports.login = async (req, res, next) => {
     // in case the password mathces
     if (passwordMatches) {
       const token = jwt.sign({ userId: user.id }, process.env.JWT_KEY, {
-        expiresIn: "12h",
+        expiresIn: "48h",
       });
       return res.status(200).json({
         userId: user._id,
@@ -183,10 +183,10 @@ exports.deleteMessage = async (req, res, next) => {
     return next(error);
   }
 
-  const messages = user.messages.filter((message) => {
+  const newMessages = user.messages.filter((message) => {
     return message.id !== id;
   });
-  user.messages = messages;
+  user.messages = newMessages;
 
   try {
     await user.save();
@@ -195,13 +195,16 @@ exports.deleteMessage = async (req, res, next) => {
     error.code = 500;
     return next(error);
   }
-  res.status(200).json({ message: "Message has been successfuly deleted" });
+  res.status(200).json({
+    message: "Message has been successfuly deleted",
+    messages: newMessages,
+  });
 };
 
 exports.getFavorites = async (req, res, next) => {
   let user;
   try {
-    user = await await User.findById(req.userData.userId).populate("favorites");
+    user = await User.findById(req.userData.userId).populate("favorites");
   } catch (err) {
     const error = new Error("Something went wrong. Please try again later");
     error.code = 500;
@@ -212,13 +215,30 @@ exports.getFavorites = async (req, res, next) => {
 
   res.status(200).json({ favorites });
 };
+
 exports.postFavorites = async (req, res, next) => {
   const { offerId } = req.body;
 
   let user;
   try {
     user = await User.findById(req.userData.userId);
-    user.favorites.push(offerId);
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  const alreadyFavorite = user.favorites.find(
+    (fav) => offerId === fav.toString()
+  );
+  if (alreadyFavorite) {
+    const error = new Error("You can't add this to your favorites' list");
+    error.code = 400;
+    return next(error);
+  }
+
+  user.favorites.push(offerId);
+  try {
     await user.save();
   } catch (err) {
     const error = new Error("Something went wrong. Please try again later");
@@ -228,6 +248,34 @@ exports.postFavorites = async (req, res, next) => {
 
   res.status(201).json({ meessage: "Offer has been added" });
 };
+
 exports.deleteFavorites = async (req, res, next) => {
   const favId = req.params.id;
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId).populate("favorites");
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  const newFavorties = user.favorites.filter(
+    (fav) => favId.toString() !== fav._id.toString()
+  );
+  user.favorites = newFavorties;
+
+  try {
+    await user.save();
+  } catch (err) {
+    const error = new Error("Something went wrong. Please try again later");
+    error.code = 500;
+    return next(error);
+  }
+
+  res.status(200).json({
+    message: "Favorite item has been deleted",
+    favorites: newFavorties,
+  });
 };
