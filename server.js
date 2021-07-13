@@ -31,6 +31,8 @@ app.use(cors());
 app.use("/users", require("./routes/users"));
 // offers route
 app.use("/offers", require("./routes/offers"));
+// hotels route
+app.use("/hotels", require("./routes/hotels"));
 
 app.get("/", (req, res, next) => {
   res.status(200).json({ message: "Welcome to the website" });

@@ -39,7 +39,7 @@ exports.getOfferById = async (req, res, next) => {
   let offer;
 
   try {
-    offer = await Offer.findById(id);
+    offer = await Offer.findById(id).populate("hotelId");
   } catch (err) {
     return next(err);
   }
@@ -92,25 +92,31 @@ exports.createOffer = async (req, res, next) => {
   const {
     category,
     title,
+    description,
     begins,
     ends,
     location,
     transportation,
     country,
     price,
+    hotelId,
     author,
   } = req.body;
+
+  console.log(req.body);
 
   //create new offer
   const offer = Offer({
     category,
     title,
+    description,
     begins,
     ends,
     location,
     transportation,
     country,
     price,
+    hotelId,
     image: imageFile.path,
     author,
   });
