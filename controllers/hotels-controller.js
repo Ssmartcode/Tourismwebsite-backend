@@ -15,7 +15,6 @@ exports.addHotel = async (req, res, next) => {
     facilities: JSON.parse(facilities).map((fac) => fac.value),
     image: req.file.path,
   });
-  console.log(newHotel);
 
   try {
     await newHotel.save();

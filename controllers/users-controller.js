@@ -102,7 +102,7 @@ exports.login = async (req, res, next) => {
 };
 
 exports.sendMessage = async (req, res, next) => {
-  const { title, email, message, reciever } = req.body;
+  const { title, email, message, related, reciever } = req.body;
 
   let recieverUser;
   let senderUser;
@@ -122,6 +122,7 @@ exports.sendMessage = async (req, res, next) => {
     title,
     email,
     message,
+    related,
     sentAt: new Date(),
   };
 
@@ -148,7 +149,6 @@ exports.sendMessage = async (req, res, next) => {
 
 exports.getMessages = async (req, res, next) => {
   const { userId } = req.params;
-  console.log(userId === req.userData.userId);
 
   if (userId !== req.userData.userId) {
     const error = new Error("You are not authorized!");

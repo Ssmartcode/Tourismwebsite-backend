@@ -21,6 +21,8 @@ exports.getOffers = async (req, res, next) => {
 
   let query = {};
   if (discounted === "yes") query = { newPrice: { $ne: null } };
+  console.log(query);
+
   try {
     offers = await Offer.find(query)
       .limit(+count)
@@ -49,12 +51,34 @@ exports.getOfferById = async (req, res, next) => {
 exports.getOffersByCategory = async (req, res, next) => {
   const category = req.params.category;
   const currPage = req.query.page || 1;
+  const {
+    priceasc,
+    pricedesc,
+    soon,
+    later,
+    discounted,
+    transportationProvided,
+  } = req.query;
+
+  // sorting
+  let sortingQuery = {};
+  if (priceasc) sortingQuery.sort = { price: 1 };
+  if (pricedesc) sortingQuery.sort = { price: -1 };
+  if (soon) sortingQuery.sort = { begins: 1 };
+  if (later) sortingQuery.sort = { begins: -1 };
+
+  // filters
+  let filterQuery = {};
+  filterQuery.category = category;
+  if (discounted) filterQuery.newPrice = { $ne: null };
+  if (transportationProvided)
+    filterQuery.transportation = { $ne: "No transportation provided" };
 
   let offers;
   let offersCount;
   try {
-    offersCount = await Offer.countDocuments({ category });
-    offers = await Offer.find({ category })
+    offersCount = await Offer.countDocuments(filterQuery, null, sortingQuery);
+    offers = await Offer.find(filterQuery, null, sortingQuery)
       .limit(2)
       .skip(2 * (currPage - 1));
   } catch (err) {
@@ -103,8 +127,6 @@ exports.createOffer = async (req, res, next) => {
     author,
   } = req.body;
 
-  console.log(req.body);
-
   //create new offer
   const offer = Offer({
     category,
@@ -150,7 +172,16 @@ exports.createOffer = async (req, res, next) => {
 
 exports.updateOffer = async (req, res, next) => {
   const id = req.params.id;
-  const { title, category, price, period } = req.body;
+  const {
+    title,
+    category,
+    price,
+    country,
+    location,
+    transportation,
+    begins,
+    ends,
+  } = req.body;
 
   // find the offer by id provided
   let offer;
@@ -166,7 +197,16 @@ exports.updateOffer = async (req, res, next) => {
     return next(err);
   }
   // update the offer
-  const updatedOffer = { title, category, price, period };
+  const updatedOffer = {
+    title,
+    category,
+    price,
+    country,
+    location,
+    transportation,
+    begins,
+    ends,
+  };
   if (req.body.newPrice) updatedOffer.newPrice = req.body.newPrice;
   try {
     await Offer.findByIdAndUpdate(id, updatedOffer);
