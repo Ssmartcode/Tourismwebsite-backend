@@ -4,19 +4,16 @@ const fileUpload = require("../config/multer-config");
 const authCheck = require("../config/auth-check");
 
 const router = express.Router();
-const {
-  getHotel,
-  addHotel,
-  deleteHotel,
-} = require("../controllers/hotels-controller");
-
-// get hotel
-router.get("/", getHotel);
+const { addHotel } = require("../controllers/hotels-controller");
+const { hotelValidator } = require("../utilites/validators");
 
 // create hotel
-router.post("/create-hotel", fileUpload.single("image"), authCheck, addHotel);
-
-// delete hotel
-router.delete("/:id", deleteHotel);
+router.post(
+  "/create-hotel",
+  fileUpload.single("image"),
+  hotelValidator,
+  authCheck,
+  addHotel
+);
 
 module.exports = router;

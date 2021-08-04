@@ -1,12 +1,17 @@
 const Hotel = require("../models/hotels");
+const { validationResult } = require("express-validator");
 
 exports.addHotel = async (req, res, next) => {
   const { description, hotelName, address, stars, facilities } = req.body;
-  if (!req.file) {
-    const error = new Error("No image provided");
-    error.code = 400;
-    next(error);
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error(
+      "Please check your inputs. Don't forget to upload an image"
+    );
+    return next(error);
   }
+
   const newHotel = new Hotel({
     description,
     hotelName,
@@ -25,12 +30,4 @@ exports.addHotel = async (req, res, next) => {
   }
 
   res.status(201).json({ message: "Successfuly created", id: newHotel._id });
-};
-
-exports.getHotel = (req, res, next) => {
-  res.status(201).json({});
-};
-
-exports.deleteHotel = (req, res, next) => {
-  res.status(201).json({});
 };

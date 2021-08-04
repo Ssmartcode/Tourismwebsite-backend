@@ -14,6 +14,12 @@ const {
   getUserOfffers,
 } = require("../controllers/offers-controller");
 
+// VALIDATORS
+const {
+  createOfferValidator,
+  updateOfferValidator,
+} = require("../utilites/validators");
+
 // get offers
 router.get("/", getOffers);
 
@@ -21,7 +27,13 @@ router.get("/", getOffers);
 router.get("/:id", getOfferById);
 
 // post offers - create an offer
-router.post("/", fileUpload.single("image"), authCheck, createOffer);
+router.post(
+  "/",
+  fileUpload.single("image"),
+  createOfferValidator,
+  authCheck,
+  createOffer
+);
 
 // get offers by category
 router.get("/category/:category", getOffersByCategory);
@@ -30,7 +42,7 @@ router.get("/category/:category", getOffersByCategory);
 router.get("/user-offers/:userId", authCheck, getUserOfffers);
 
 // update offer
-router.patch("/:id", authCheck, updateOffer);
+router.patch("/:id", updateOfferValidator, authCheck, updateOffer);
 
 // delete offer
 router.delete("/:id", authCheck, deleteOffer);

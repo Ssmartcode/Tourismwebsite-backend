@@ -9,8 +9,14 @@ const User = require("../models/users");
 
 // SIGNUP CONTROLLER
 exports.signup = async (req, res, next) => {
-  const errors = validationResult(req);
   const { userName, userPassword, isAdmin } = req.body;
+
+  const errors = validationResult(req);
+  // if credentials are not valid, throw an error
+  if (!errors.isEmpty()) {
+    const error = new Error("Your credentials are not valid");
+    next(error);
+  }
 
   // check if user with same name already exists in data base
   let userExists;
@@ -57,6 +63,14 @@ exports.signup = async (req, res, next) => {
 // LOGIN CONTROLLER
 exports.login = async (req, res, next) => {
   const { userName, userPassword } = req.body;
+
+  const errors = validationResult(req);
+  // if credentials are not valid, throw an error
+  if (!errors.isEmpty()) {
+    const error = new Error("Your credentials are not valid");
+    return next(error);
+  }
+
   let user;
   try {
     user = await User.findOne({ userName });
