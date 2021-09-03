@@ -26,7 +26,7 @@ router.post("/login", loginValidator, login);
 
 // get-add-delete favorite offers from user's list
 router.get("/favorites", authCheck, getFavorites);
-router.post("/favorites/add", authCheck, postFavorites);
+router.post("/favorites/add/:offerId", authCheck, postFavorites);
 router.delete("/favorites/delete/:id", authCheck, deleteFavorites);
 
 // get-add-delete messages from user's list of messages (both sent and recieved)

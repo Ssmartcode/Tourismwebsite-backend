@@ -231,7 +231,7 @@ exports.getFavorites = async (req, res, next) => {
 };
 
 exports.postFavorites = async (req, res, next) => {
-  const { offerId } = req.body;
+  const { offerId } = req.params;
 
   let user;
   try {
